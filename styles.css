@@ -2074,6 +2074,8 @@ button {
 }
 
 .cursor-aura {
+  --cursor-tilt-x: 0deg;
+  --cursor-tilt-y: 0deg;
   position: fixed;
   top: 0;
   left: 0;
@@ -2084,8 +2086,10 @@ button {
   border: 1px solid rgba(255, 224, 125, 0.72);
   border-radius: 50% 46% 54% 42%;
   pointer-events: none;
-  transform: translate3d(var(--cursor-x), var(--cursor-y), 0);
-  transition: width 240ms var(--ease-expo), height 240ms var(--ease-expo), margin 240ms var(--ease-expo), background 240ms ease, border-color 240ms ease;
+  transform: translate3d(var(--cursor-x), var(--cursor-y), 0) perspective(180px) rotateX(var(--cursor-tilt-y)) rotateY(var(--cursor-tilt-x));
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: width 240ms var(--ease-expo), height 240ms var(--ease-expo), margin 240ms var(--ease-expo), background 240ms ease, border-color 240ms ease, filter 240ms ease;
   box-shadow: inset -7px -8px 0 rgba(183, 21, 58, .24), inset 6px 5px 0 rgba(255, 224, 125, .18), 0 0 22px rgba(255, 202, 58, .18);
 }
 
@@ -2103,7 +2107,7 @@ button {
   height: 19px;
   border: 1px solid rgba(255, 247, 235, .76);
   border-radius: 50%;
-  transform: rotate(-16deg);
+  transform: translateZ(7px) rotate(-16deg);
   box-shadow: 11px 7px 0 -6px #93cf70, 11px 7px 0 -4px rgba(10, 20, 12, .8);
 }
 
@@ -2114,7 +2118,7 @@ button {
   height: 17px;
   border-right: 2px solid #ffe07d;
   border-bottom: 2px solid #b7153a;
-  transform: rotate(-32deg);
+  transform: translateZ(5px) rotate(-32deg);
 }
 
 .cursor-aura span {
@@ -2126,7 +2130,7 @@ button {
   border-radius: 50%;
   background: #93cf70;
   box-shadow: 0 0 0 2px rgba(23, 19, 19, .82), 0 0 8px rgba(147, 207, 112, .72);
-  transform: translate(-50%, -50%);
+  transform: translate3d(-50%, -50%, 12px);
 }
 
 .cursor-aura.is-hovering {
@@ -2135,6 +2139,7 @@ button {
   margin: -36px 0 0 -36px;
   border-color: #ffe07d;
   background: rgba(255, 224, 125, 0.12);
+  filter: saturate(1.22) brightness(1.08);
   box-shadow: inset -9px -10px 0 rgba(183, 21, 58, .24), 0 0 30px rgba(255, 202, 58, .28);
 }
 

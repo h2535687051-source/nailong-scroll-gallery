@@ -2463,6 +2463,10 @@ function mountOverdriveExperience() {
       lastPointerX = event.clientX;
       lastPointerY = event.clientY;
       requestOverdriveRender();
+      const tiltX = clamp((event.clientX / Math.max(1, window.innerWidth) - 0.5) * 14, -8, 8);
+      const tiltY = clamp((0.5 - event.clientY / Math.max(1, window.innerHeight)) * 14, -8, 8);
+      root.style.setProperty("--cursor-tilt-x", `${tiltX}deg`);
+      root.style.setProperty("--cursor-tilt-y", `${tiltY}deg`);
     }, { passive: true });
     document.querySelectorAll("a, button, .flip-card").forEach((interactive) => {
       interactive.addEventListener("pointerenter", () => cursorAura.classList.add("is-hovering"));

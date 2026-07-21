@@ -2695,16 +2695,6 @@ button {
   clip-path: inset(0);
 }
 
-.gallery-entry::before,
-.gallery-entry::after {
-  position: absolute;
-  border: 1px solid rgba(255,247,235,.28);
-  content: "";
-  pointer-events: none;
-}
-
-.gallery-entry::before { inset: 8vw; transform: rotate(-7deg); }
-.gallery-entry::after { inset: 12vw 18vw; transform: rotate(8deg); opacity: .55; }
 .gallery-entry > * { position: relative; z-index: 1; }
 .gallery-entry__eyebrow { margin: 0; font: 10px/1 "Michroma", Arial, sans-serif; letter-spacing: .12em; }
 .gallery-entry h2 { margin: 0; font: 900 clamp(60px, 10vw, 170px)/.82 "Noto Sans SC", sans-serif; letter-spacing: 0; }

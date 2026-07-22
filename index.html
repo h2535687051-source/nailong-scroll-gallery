@@ -175,6 +175,10 @@
             <nav class="nav" aria-label="主导航">
               <a href="#manifesto" data-magnetic><span>Motion</span></a>
               <a href="#cards" data-magnetic><span>Deck</span></a>
+              <button class="sound-toggle" id="sound-toggle" type="button" aria-label="暂停背景音乐" aria-pressed="true" title="暂停背景音乐">
+                <span class="sound-toggle__bell" aria-hidden="true"></span>
+                <span class="sound-toggle__wave" aria-hidden="true"></span>
+              </button>
               <button class="menu-trigger" id="menu-open" type="button" data-magnetic aria-label="打开菜单">
                 <span>Menu</span><i aria-hidden="true"></i>
               </button>
@@ -499,6 +503,10 @@
       </section>
 
     </main>
+
+    <audio id="background-music" loop preload="none" aria-hidden="true">
+      <source data-src="assets/audio/nailong-theme.mp3" type="audio/mpeg" />
+    </audio>
 
     <dialog class="card-dialog" id="card-dialog" aria-labelledby="card-dialog-title">
       <div class="card-dialog__surface">

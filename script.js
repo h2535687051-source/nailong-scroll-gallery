@@ -5,6 +5,8 @@ const brandIntro = document.querySelector("#brand-intro");
 const siteLoader = document.querySelector("#site-loader");
 const siteLoaderVideo = document.querySelector("#site-loader-video");
 const siteLoaderProgress = document.querySelector("#site-loader-progress");
+const backgroundMusic = document.querySelector("#background-music");
+const soundToggle = document.querySelector("#sound-toggle");
 const hero = document.querySelector(".hero");
 const heroScrollPrompt = document.querySelector(".hero-scroll-prompt");
 const wordmark = document.querySelector(".wordmark");
@@ -54,6 +56,7 @@ let brandIntroTimer = 0;
 let brandIntroFinished = false;
 let cardsUnlocked = !cardsEntryAction || prefersReducedMotion;
 let cardsPreloaded = false;
+let musicRequested = true;
 const optionalModules = new Map();
 
 function loadOptionalModule(src) {
@@ -87,6 +90,50 @@ function scheduleOptionalVisuals() {
   }, { rootMargin: "140% 0px" });
   observer.observe(prologScene);
 }
+
+function hydrateBackgroundMusic() {
+  if (!backgroundMusic) return;
+  const source = backgroundMusic.querySelector("source[data-src]");
+  if (!source) return;
+  source.src = source.dataset.src;
+  source.removeAttribute("data-src");
+  backgroundMusic.load();
+}
+
+function updateMusicControl() {
+  if (!soundToggle || !backgroundMusic) return;
+  const playing = !backgroundMusic.paused && !backgroundMusic.ended;
+  soundToggle.classList.toggle("is-playing", playing);
+  soundToggle.setAttribute("aria-pressed", String(playing));
+  soundToggle.setAttribute("aria-label", playing ? "暂停背景音乐" : "播放背景音乐");
+  soundToggle.title = playing ? "暂停背景音乐" : "播放背景音乐";
+}
+
+async function playBackgroundMusic() {
+  if (!backgroundMusic || !musicRequested) return;
+  hydrateBackgroundMusic();
+  backgroundMusic.volume = 0.72;
+  try {
+    await backgroundMusic.play();
+  } catch {
+    musicRequested = false;
+  }
+  updateMusicControl();
+}
+
+soundToggle?.addEventListener("click", async () => {
+  if (!backgroundMusic) return;
+  if (backgroundMusic.paused) {
+    musicRequested = true;
+    await playBackgroundMusic();
+  } else {
+    musicRequested = false;
+    backgroundMusic.pause();
+    updateMusicControl();
+  }
+});
+backgroundMusic?.addEventListener("play", updateMusicControl);
+backgroundMusic?.addEventListener("pause", updateMusicControl);
 
 function waitForImage(image) {
   if (!image) return Promise.resolve();
@@ -268,6 +315,7 @@ async function enterSite() {
   siteLoader.classList.add("is-leaving");
   await warmSceneCompositor(false);
   document.body.classList.remove("is-loading");
+  playBackgroundMusic();
   scheduleSecondaryScrubHydration();
   scheduleOptionalVisuals();
   window.setTimeout(() => siteLoader.remove(), 680);

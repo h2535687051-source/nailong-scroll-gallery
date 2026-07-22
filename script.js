@@ -336,6 +336,18 @@ function prepareHeroVideo() {
 
 function promoteScrubPreload(scrubber) {
   if (!scrubber?.element) return Promise.resolve();
+
+  const heroScrubber = scrubVideos.find(({ element }) => element === video);
+  if (
+    scrubber.element !== video &&
+    heroScrubber &&
+    !heroScrubber.hydrated &&
+    !heroScrubber.hydrateFailed
+  ) {
+    const heroReady = heroScrubber.hydratePromise || prepareHeroVideo();
+    return Promise.resolve(heroReady).then(() => hydrateScrubVideoBlob(scrubber));
+  }
+
   return hydrateScrubVideoBlob(scrubber);
 }
 
@@ -346,18 +358,24 @@ function scheduleSecondaryScrubHydration() {
   const secondary = scrubVideos.filter((scrubber) => scrubber.element !== video);
   if (!secondary.length) return;
 
-  const start = () => secondary.forEach((scrubber) => promoteScrubPreload(scrubber));
-  if (!window.IntersectionObserver) {
-    window.setTimeout(start, 4500);
-    return;
-  }
+  const start = () => secondary.reduce(
+    (previous, scrubber) => previous.then(() => promoteScrubPreload(scrubber)),
+    Promise.resolve(),
+  );
+  const runWhenIdle = () => {
+    if (window.requestIdleCallback) {
+      window.requestIdleCallback(start, { timeout: 1400 });
+    } else {
+      window.setTimeout(start, 320);
+    }
+  };
 
-  const observer = new IntersectionObserver((entries) => {
-    if (!entries.some((entry) => entry.isIntersecting)) return;
-    observer.disconnect();
-    start();
-  }, { rootMargin: "0px 0px -55% 0px" });
-  secondary.forEach((scrubber) => scrubber.scene && observer.observe(scrubber.scene));
+  // Hydrate media in sequence. The browser can reuse the hero decoder once
+  // its first frame is ready instead of competing with the next scroll scene.
+  const heroScrubber = scrubVideos.find(({ element }) => element === video);
+  Promise.resolve(heroScrubber?.hydratePromise || prepareHeroVideo())
+    .catch(() => {})
+    .finally(runWhenIdle);
 }
 
 let renderRequest = 0;
@@ -1602,6 +1620,9 @@ function mountOverdriveExperience() {
   const modelDialogTrigger = document.querySelector("#prolog-model-trigger");
   const modelDialogClose = document.querySelector("#model-dialog-close");
   const modelViewerFrame = document.querySelector("#model-viewer-frame");
+  const modelDialogTitle = document.querySelector("#model-dialog-title");
+  const modelDialogSource = document.querySelector("#model-dialog-source");
+  const modelDialogModels = [...document.querySelectorAll("[data-model-id]")];
   const canHover = window.matchMedia?.("(hover: hover) and (pointer: fine)").matches;
 
   const cardTitles = [
@@ -1682,8 +1703,8 @@ function mountOverdriveExperience() {
     if (!galleryStage || galleryEntry?.classList.contains("is-leaving")) return;
     galleryEntry?.classList.add("is-leaving");
     galleryEntryAction?.setAttribute("aria-busy", "true");
+    galleryStage.removeAttribute("data-gallery-locked");
     window.setTimeout(() => {
-      galleryStage.removeAttribute("data-gallery-locked");
       galleryStage.setAttribute("aria-busy", "false");
       galleryEntry?.classList.add("is-gone");
       galleryEntryAction?.removeAttribute("aria-busy");
@@ -2342,11 +2363,33 @@ function mountOverdriveExperience() {
 
   function openModelDialog() {
     if (!modelDialog) return;
+    const activeModel = modelDialogModels.find((model) => model.classList.contains("is-active")) || modelDialogModels[0];
+    if (activeModel) selectModel(activeModel, false);
     if (modelViewerFrame && !modelViewerFrame.src) {
       modelViewerFrame.src = modelViewerFrame.dataset.src || "";
     }
     if (!modelDialog.open) modelDialog.showModal();
     modelDialogTrigger?.setAttribute("aria-expanded", "true");
+  }
+
+  function selectModel(model, reload = true) {
+    if (!model || !modelViewerFrame) return;
+    const modelId = model.dataset.modelId;
+    if (!modelId) return;
+    modelDialogModels.forEach((option) => {
+      const selected = option === model;
+      option.classList.toggle("is-active", selected);
+      option.setAttribute("aria-selected", String(selected));
+    });
+    if (modelDialogTitle && model.dataset.modelTitle) modelDialogTitle.textContent = model.dataset.modelTitle;
+    if (modelDialogSource && model.dataset.modelSource) {
+      modelDialogSource.href = model.dataset.modelSource;
+    }
+    if (!reload || modelViewerFrame.src.includes(modelId)) return;
+    modelViewerFrame.src = "";
+    window.requestAnimationFrame(() => {
+      modelViewerFrame.src = `https://sketchfab.com/models/${modelId}/embed?autostart=1&ui_infos=0&ui_controls=1&ui_watermark=1`;
+    });
   }
 
   function closeModelDialog() {
@@ -2358,6 +2401,7 @@ function mountOverdriveExperience() {
 
   modelDialogTrigger?.addEventListener("click", openModelDialog);
   modelDialogClose?.addEventListener("click", closeModelDialog);
+  modelDialogModels.forEach((model) => model.addEventListener("click", () => selectModel(model)));
   modelDialog?.addEventListener("click", (event) => {
     if (event.target === modelDialog) closeModelDialog();
   });

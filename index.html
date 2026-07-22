@@ -551,6 +551,35 @@
           </div>
           <button class="model-dialog__close" id="model-dialog-close" type="button" aria-label="关闭奶龙模型实验室">CLOSE</button>
         </header>
+        <nav class="model-dialog__models" aria-label="奶龙模型切换" role="tablist">
+          <button
+            class="model-dialog__model is-active"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            data-model-id="d4617facf9574b45bc57c64e44497242"
+            data-model-title="奶龙 · 旋转观察"
+            data-model-source="https://sketchfab.com/models/d4617facf9574b45bc57c64e44497242"
+          >经典奶龙 <small>CC BY</small></button>
+          <button
+            class="model-dialog__model"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            data-model-id="d7a3f20de4e4486182806c40699d26d4"
+            data-model-title="奶龙 · 轻量模型"
+            data-model-source="https://sketchfab.com/models/d7a3f20de4e4486182806c40699d26d4"
+          >轻量奶龙 <small>FREE STANDARD</small></button>
+          <button
+            class="model-dialog__model"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            data-model-id="42e34ee1f457477caf871cab902d6952"
+            data-model-title="奶龙女孩 · 角色变体"
+            data-model-source="https://sketchfab.com/models/42e34ee1f457477caf871cab902d6952"
+          >角色变体 <small>CC BY</small></button>
+        </nav>
         <div class="model-dialog__viewer">
           <iframe
             id="model-viewer-frame"
@@ -558,12 +587,12 @@
             loading="lazy"
             data-src="https://sketchfab.com/models/d4617facf9574b45bc57c64e44497242/embed?autostart=1&ui_infos=0&ui_controls=1&ui_watermark=1"
             allow="accelerometer; autoplay; fullscreen; gyroscope; xr-spatial-tracking"
-            allowfullscreen
           ></iframe>
         </div>
         <footer class="model-dialog__footer">
           <span>DRAG / ZOOM / FULLSCREEN</span>
           <a
+            id="model-dialog-source"
             href="https://sketchfab.com/models/d4617facf9574b45bc57c64e44497242"
             target="_blank"
             rel="noreferrer"

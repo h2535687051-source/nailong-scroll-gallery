@@ -286,6 +286,10 @@ function startBrandIntro() {
     startSiteLoader();
     return;
   }
+  if (brandIntro.dataset.skipRequested === "true") {
+    finishBrandIntro();
+    return;
+  }
 
   siteLoaderVideo?.pause();
   brandIntro.addEventListener("click", finishBrandIntro);

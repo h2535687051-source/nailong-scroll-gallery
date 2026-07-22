@@ -69,19 +69,23 @@
     </button>
 
     <script>
+      const earlyBrandIntro = document.querySelector("#brand-intro");
+      earlyBrandIntro?.addEventListener("click", () => {
+        earlyBrandIntro.dataset.skipRequested = "true";
+      }, { once: true });
       window.addEventListener("load", () => {
         window.setTimeout(() => {
           const markup = document.createElement("script");
-          markup.src = "app-markup.js?v=20260722-runtime-v16";
+          markup.src = "app-markup.js?v=20260722-runtime-v17";
           markup.addEventListener("load", () => {
             markup.remove();
             const styles = document.createElement("link");
             styles.rel = "stylesheet";
-            styles.href = "styles.css?v=20260722-runtime-v16";
+            styles.href = "styles.css?v=20260722-runtime-v17";
             styles.addEventListener("load", () => {
               document.documentElement.classList.add("styles-ready");
               const runtime = document.createElement("script");
-              runtime.src = "script.js?v=20260722-runtime-v16";
+              runtime.src = "script.js?v=20260722-runtime-v17";
               document.body.append(runtime);
             }, { once: true });
             document.head.append(styles);

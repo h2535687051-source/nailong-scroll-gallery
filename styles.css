@@ -2076,21 +2076,19 @@ button {
 .cursor-aura {
   --cursor-tilt-x: 0deg;
   --cursor-tilt-y: 0deg;
+  --cursor-scale: 1;
   position: fixed;
   top: 0;
   left: 0;
   z-index: 9000;
-  width: 44px;
-  height: 44px;
-  margin: -22px 0 0 -22px;
-  border: 1px solid rgba(255, 224, 125, 0.72);
-  border-radius: 50% 46% 54% 42%;
+  width: 46px;
+  height: 52px;
+  margin: -26px 0 0 -23px;
   pointer-events: none;
-  transform: translate3d(var(--cursor-x), var(--cursor-y), 0) perspective(180px) rotateX(var(--cursor-tilt-y)) rotateY(var(--cursor-tilt-x));
+  transform: translate3d(var(--cursor-x), var(--cursor-y), 0) perspective(220px) rotateX(var(--cursor-tilt-y)) rotateY(var(--cursor-tilt-x)) scale(var(--cursor-scale));
   transform-style: preserve-3d;
   will-change: transform;
-  transition: width 240ms var(--ease-expo), height 240ms var(--ease-expo), margin 240ms var(--ease-expo), background 240ms ease, border-color 240ms ease, filter 240ms ease;
-  box-shadow: inset -7px -8px 0 rgba(183, 21, 58, .24), inset 6px 5px 0 rgba(255, 224, 125, .18), 0 0 22px rgba(255, 202, 58, .18);
+  transition: filter 240ms ease;
 }
 
 .cursor-aura::before,
@@ -2101,46 +2099,78 @@ button {
 }
 
 .cursor-aura::before {
-  top: 8px;
+  z-index: -1;
+  top: 39px;
   left: 8px;
-  width: 27px;
-  height: 19px;
-  border: 1px solid rgba(255, 247, 235, .76);
-  border-radius: 50%;
-  transform: translateZ(7px) rotate(-16deg);
-  box-shadow: 11px 7px 0 -6px #93cf70, 11px 7px 0 -4px rgba(10, 20, 12, .8);
+  width: 11px;
+  height: 9px;
+  border-radius: 70% 20% 70% 30%;
+  background: #f2aa18;
+  box-shadow: 19px 0 0 #e99a10;
+  transform: translateZ(-4px) rotate(18deg);
 }
 
 .cursor-aura::after {
-  right: -3px;
-  bottom: -5px;
-  width: 10px;
-  height: 17px;
-  border-right: 2px solid #ffe07d;
-  border-bottom: 2px solid #b7153a;
-  transform: translateZ(5px) rotate(-32deg);
+  top: 30px;
+  left: 14px;
+  width: 18px;
+  height: 10px;
+  background: #cf2242;
+  clip-path: polygon(0 0, 42% 30%, 50% 18%, 58% 30%, 100% 0, 82% 50%, 100% 100%, 58% 70%, 50% 82%, 42% 70%, 0 100%, 18% 50%);
+  filter: drop-shadow(0 2px 1px rgba(77, 8, 22, .36));
+  transform: translateZ(12px);
 }
 
 .cursor-aura span {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #93cf70;
-  box-shadow: 0 0 0 2px rgba(23, 19, 19, .82), 0 0 8px rgba(147, 207, 112, .72);
-  transform: translate3d(-50%, -50%, 12px);
+  top: 3px;
+  left: 7px;
+  width: 32px;
+  height: 43px;
+  border: 1px solid rgba(146, 92, 4, .42);
+  border-radius: 50% 50% 44% 44%;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255,255,255,.9) 0 4%, transparent 5%),
+    linear-gradient(145deg, #fff08a 0%, #ffd747 42%, #efaa16 78%, #d9870b 100%);
+  box-shadow:
+    inset 5px 4px 7px rgba(255,255,255,.44),
+    inset -7px -8px 9px rgba(164,91,0,.28),
+    0 5px 10px rgba(26,15,2,.28),
+    0 0 18px rgba(255,206,54,.18);
+  transform: translateZ(5px);
+  transform-style: preserve-3d;
+}
+
+.cursor-aura span::before,
+.cursor-aura span::after {
+  position: absolute;
+  content: "";
+}
+
+.cursor-aura span::before {
+  top: 10px;
+  left: 5px;
+  width: 22px;
+  height: 11px;
+  background:
+    radial-gradient(circle at 27% 50%, #10130d 0 13%, #8bc96b 15% 32%, rgba(61,94,43,.65) 34% 40%, transparent 42%),
+    radial-gradient(circle at 73% 50%, #10130d 0 13%, #8bc96b 15% 32%, rgba(61,94,43,.65) 34% 40%, transparent 42%);
+  transform: translateZ(7px);
+}
+
+.cursor-aura span::after {
+  top: 24px;
+  left: 10px;
+  width: 10px;
+  height: 4px;
+  border-bottom: 1.5px solid rgba(75,42,5,.78);
+  border-radius: 0 0 50% 50%;
+  transform: translateZ(8px);
 }
 
 .cursor-aura.is-hovering {
-  width: 72px;
-  height: 72px;
-  margin: -36px 0 0 -36px;
-  border-color: #ffe07d;
-  background: rgba(255, 224, 125, 0.12);
+  --cursor-scale: 1.32;
   filter: saturate(1.22) brightness(1.08);
-  box-shadow: inset -9px -10px 0 rgba(183, 21, 58, .24), 0 0 30px rgba(255, 202, 58, .28);
 }
 
 @media (hover: hover) and (pointer: fine) {

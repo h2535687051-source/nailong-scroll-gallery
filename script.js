@@ -247,6 +247,7 @@ const scrubVideos = [
     decoderWarmPromise: null,
     warming: false,
     lastSeekStamp: Number.NEGATIVE_INFINITY,
+    seekTimer: 0,
   },
   {
     element: manifestoVideo,
@@ -262,6 +263,7 @@ const scrubVideos = [
     decoderWarmPromise: null,
     warming: false,
     lastSeekStamp: Number.NEGATIVE_INFINITY,
+    seekTimer: 0,
   },
 ]
   .filter(({ element }) => element?.querySelector("source[src], source[data-src]"))
@@ -354,7 +356,7 @@ function scheduleSecondaryScrubHydration() {
     if (!entries.some((entry) => entry.isIntersecting)) return;
     observer.disconnect();
     start();
-  }, { rootMargin: "120% 0px" });
+  }, { rootMargin: "0px 0px -55% 0px" });
   secondary.forEach((scrubber) => scrubber.scene && observer.observe(scrubber.scene));
 }
 
@@ -1236,7 +1238,7 @@ function updateScrubVideo(scrubber, sceneState) {
   if (element.seeking) {
     // Do not enqueue another seek while the browser is decoding one. The
     // latest target is retained above and applied on the next seeked event.
-    return true;
+    return false;
   }
 
   if (Math.abs(element.currentTime - targetTime) < seekThreshold) {
@@ -1244,8 +1246,16 @@ function updateScrubVideo(scrubber, sceneState) {
   }
 
   const now = performance.now();
-  if (now - scrubber.lastSeekStamp < 1000 / frameRate) {
-    return true;
+  const seekInterval = 1000 / frameRate;
+  const elapsedSinceSeek = now - scrubber.lastSeekStamp;
+  if (elapsedSinceSeek < seekInterval) {
+    if (!scrubber.seekTimer) {
+      scrubber.seekTimer = window.setTimeout(() => {
+        scrubber.seekTimer = 0;
+        scheduleRender();
+      }, Math.max(0, seekInterval - elapsedSinceSeek));
+    }
+    return false;
   }
 
   scrubber.lastSeekStamp = now;
@@ -1525,6 +1535,8 @@ window.addEventListener("scroll", handleScroll, { passive: true });
 window.addEventListener("pagehide", (event) => {
   if (event.persisted) return;
   scrubVideos.forEach((scrubber) => {
+    window.clearTimeout(scrubber.seekTimer);
+    scrubber.seekTimer = 0;
     if (!scrubber.objectUrl) return;
     URL.revokeObjectURL(scrubber.objectUrl);
     scrubber.objectUrl = "";

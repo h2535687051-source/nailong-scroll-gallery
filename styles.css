@@ -636,8 +636,10 @@ a {
   letter-spacing: 0.015em;
   line-height: 0.8;
   transform: translateX(-50%);
+  transform-origin: 50% 100%;
   text-transform: uppercase;
   white-space: nowrap;
+  will-change: transform, opacity;
 }
 
 .wordmark__character,
@@ -647,7 +649,6 @@ a {
 
 .wordmark__character {
   transform-origin: 50% 100%;
-  will-change: transform, opacity;
 }
 
 .wordmark__space {
@@ -704,9 +705,9 @@ a {
 
 .scroll-reveal {
   opacity: 0;
-  filter: blur(6px);
   transform: translate3d(72px, 0, 0) scale(0.94);
   transform-origin: 100% 50%;
+  will-change: transform, opacity;
 }
 
 .sr-only {
@@ -2074,6 +2075,15 @@ button {
   transform: translate3d(0, 0, 0);
 }
 
+.is-scrolling .film-grain {
+  visibility: hidden;
+}
+
+.is-scrolling .sound-toggle.is-playing .sound-toggle__bell,
+.is-scrolling .sound-toggle.is-playing .sound-toggle__wave {
+  animation: none;
+}
+
 .transition-grid {
   position: fixed;
   inset: 0;
@@ -2685,7 +2695,16 @@ button {
   white-space: nowrap;
 }
 
-.prolog-marquee div { width: max-content; animation: marquee-move 20s linear infinite; }
+.prolog-marquee div {
+  width: max-content;
+  animation: marquee-move 20s linear infinite;
+  animation-play-state: paused;
+}
+
+.prolog-scene.is-runtime-active .prolog-marquee div {
+  animation-play-state: running;
+}
+.is-scrolling .prolog-marquee div { animation-play-state: paused; }
 @keyframes marquee-move { to { transform: translateX(-50%); } }
 
 .factoids-scene {
@@ -2807,6 +2826,7 @@ button {
 }
 
 .gallery-curtain i:nth-child(even) { background: color-mix(in srgb, var(--gallery-curtain-color, #080809) 82%, white); }
+.gallery-stage.is-gallery-unlocked > .gallery-curtain { clip-path: inset(0 100% 0 0); }
 
 .gallery-entry {
   position: absolute;
@@ -3102,6 +3122,21 @@ button {
 .orbit-card__meta b { color: var(--presentation-accent); font-weight: 400; }
 .orbit-card__meta em { overflow: hidden; font-style: normal; text-overflow: ellipsis; white-space: nowrap; }
 .orbit-card.is-active .orbit-card__meta { opacity: 1; }
+
+.gallery-stage.is-gallery-moving .orbit-card__frame {
+  box-shadow: 0 20px 42px rgba(0,0,0,.34);
+  transition: none;
+}
+
+.gallery-stage.is-gallery-moving .orbit-card__glint,
+.gallery-stage.is-gallery-moving .orbit-card__meta {
+  visibility: hidden;
+}
+
+.gallery-stage.is-gallery-moving .orbit-card::before,
+.gallery-stage.is-gallery-moving .orbit-card::after {
+  opacity: 0;
+}
 
 .orbit-card:hover .orbit-card__frame,
 .orbit-card:focus-visible .orbit-card__frame,

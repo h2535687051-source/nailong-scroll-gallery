@@ -14,11 +14,13 @@ if (canvas && sceneElement) {
       powerPreference: "high-performance",
     });
     const renderPixelRatio = Math.min(window.devicePixelRatio || 1, 1.1);
-    renderer.setPixelRatio(renderPixelRatio);
+    const scrollingPixelRatio = Math.min(renderPixelRatio, 0.72);
+    let activePixelRatio = renderPixelRatio;
+    renderer.setPixelRatio(activePixelRatio);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.setClearColor(0x000000, 0);
     canvas.dataset.webglInit = "true";
-    canvas.dataset.webglPixelRatio = `${renderPixelRatio}`;
+    canvas.dataset.webglPixelRatio = `${activePixelRatio}`;
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 30);
@@ -65,30 +67,42 @@ if (canvas && sceneElement) {
       return part;
     }
 
-    addCharacterPart(new THREE.SphereGeometry(0.84, 28, 20), yellowMaterial, [0, -0.08, 0], [1, 1.16, 0.82]);
-    addCharacterPart(new THREE.SphereGeometry(0.82, 28, 20), yellowMaterial, [0, 1.03, 0.04], [1.04, 0.98, 0.86]);
-    addCharacterPart(new THREE.SphereGeometry(0.54, 24, 16), bellyMaterial, [0, -0.2, 0.66], [1, 1.08, 0.3]);
+    const sphereGeometryCache = new Map();
+    function getSphereGeometry(radius, widthSegments, heightSegments) {
+      const key = `${radius}:${widthSegments}:${heightSegments}`;
+      if (!sphereGeometryCache.has(key)) {
+        sphereGeometryCache.set(
+          key,
+          new THREE.SphereGeometry(radius, widthSegments, heightSegments),
+        );
+      }
+      return sphereGeometryCache.get(key);
+    }
+
+    addCharacterPart(getSphereGeometry(0.84, 28, 20), yellowMaterial, [0, -0.08, 0], [1, 1.16, 0.82]);
+    addCharacterPart(getSphereGeometry(0.82, 28, 20), yellowMaterial, [0, 1.03, 0.04], [1.04, 0.98, 0.86]);
+    addCharacterPart(getSphereGeometry(0.54, 24, 16), bellyMaterial, [0, -0.2, 0.66], [1, 1.08, 0.3]);
 
     const eyePositions = [[-0.34, 1.28, 0.72], [0.34, 1.28, 0.72]];
     eyePositions.forEach(([x, y, z]) => {
-      addCharacterPart(new THREE.SphereGeometry(0.18, 18, 14), bellyMaterial, [x, y, z]);
-      addCharacterPart(new THREE.SphereGeometry(0.11, 16, 12), greenMaterial, [x, y, z + 0.1]);
-      addCharacterPart(new THREE.SphereGeometry(0.055, 12, 10), darkMaterial, [x, y, z + 0.19]);
+      addCharacterPart(getSphereGeometry(0.18, 18, 14), bellyMaterial, [x, y, z]);
+      addCharacterPart(getSphereGeometry(0.11, 16, 12), greenMaterial, [x, y, z + 0.1]);
+      addCharacterPart(getSphereGeometry(0.055, 12, 10), darkMaterial, [x, y, z + 0.19]);
     });
 
-    addCharacterPart(new THREE.SphereGeometry(0.24, 20, 14), darkMaterial, [0, 0.88, 0.76], [1.28, 0.72, 0.38]);
-    addCharacterPart(new THREE.SphereGeometry(0.09, 14, 10), redMaterial, [0, 0.87, 0.89], [1.3, 0.6, 0.28]);
+    addCharacterPart(getSphereGeometry(0.24, 20, 14), darkMaterial, [0, 0.88, 0.76], [1.28, 0.72, 0.38]);
+    addCharacterPart(getSphereGeometry(0.09, 14, 10), redMaterial, [0, 0.87, 0.89], [1.3, 0.6, 0.28]);
 
-    addCharacterPart(new THREE.SphereGeometry(0.3, 20, 14), yellowMaterial, [-0.92, 0.08, 0], [0.54, 0.88, 0.62]);
-    addCharacterPart(new THREE.SphereGeometry(0.3, 20, 14), yellowMaterial, [0.92, 0.08, 0], [0.54, 0.88, 0.62]);
-    addCharacterPart(new THREE.SphereGeometry(0.33, 20, 14), bellyMaterial, [-0.42, -1.02, 0.12], [0.7, 0.48, 0.72]);
-    addCharacterPart(new THREE.SphereGeometry(0.33, 20, 14), bellyMaterial, [0.42, -1.02, 0.12], [0.7, 0.48, 0.72]);
+    addCharacterPart(getSphereGeometry(0.3, 20, 14), yellowMaterial, [-0.92, 0.08, 0], [0.54, 0.88, 0.62]);
+    addCharacterPart(getSphereGeometry(0.3, 20, 14), yellowMaterial, [0.92, 0.08, 0], [0.54, 0.88, 0.62]);
+    addCharacterPart(getSphereGeometry(0.33, 20, 14), bellyMaterial, [-0.42, -1.02, 0.12], [0.7, 0.48, 0.72]);
+    addCharacterPart(getSphereGeometry(0.33, 20, 14), bellyMaterial, [0.42, -1.02, 0.12], [0.7, 0.48, 0.72]);
 
-    const bowLeft = addCharacterPart(new THREE.SphereGeometry(0.24, 18, 12), redMaterial, [-0.22, 0.57, 0.78], [1.1, 0.78, 0.28]);
-    const bowRight = addCharacterPart(new THREE.SphereGeometry(0.24, 18, 12), redMaterial, [0.22, 0.57, 0.78], [1.1, 0.78, 0.28]);
+    const bowLeft = addCharacterPart(getSphereGeometry(0.24, 18, 12), redMaterial, [-0.22, 0.57, 0.78], [1.1, 0.78, 0.28]);
+    const bowRight = addCharacterPart(getSphereGeometry(0.24, 18, 12), redMaterial, [0.22, 0.57, 0.78], [1.1, 0.78, 0.28]);
     bowLeft.rotation.z = -0.3;
     bowRight.rotation.z = 0.3;
-    addCharacterPart(new THREE.SphereGeometry(0.11, 16, 12), darkMaterial, [0, 0.57, 0.86], [1, 1, 0.5]);
+    addCharacterPart(getSphereGeometry(0.11, 16, 12), darkMaterial, [0, 0.57, 0.86], [1, 1, 0.5]);
 
     const tailCurve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(-0.62, -0.34, -0.26),
@@ -101,7 +115,7 @@ if (canvas && sceneElement) {
 
     for (let index = 0; index < 5; index += 1) {
       const tuft = addCharacterPart(
-        new THREE.SphereGeometry(0.15, 14, 10),
+        getSphereGeometry(0.15, 14, 10),
         bellyMaterial,
         [(index - 2) * 0.16, 1.8 + Math.abs(index - 2) * 0.035, 0.02],
         [0.72, 0.9, 0.68],
@@ -198,6 +212,9 @@ if (canvas && sceneElement) {
     let lastTime = performance.now();
     let sceneTop = 0;
     let sceneTravel = 1;
+    let rendererReady = false;
+    let rendererWarmPromise = null;
+    let nextFrameAt = 0;
 
     function updateSceneMetrics() {
       const bounds = sceneElement.getBoundingClientRect();
@@ -217,12 +234,30 @@ if (canvas && sceneElement) {
       updateSceneMetrics();
     }
 
+    function syncRenderQuality() {
+      const targetPixelRatio = document.documentElement.classList.contains("is-scrolling")
+        ? scrollingPixelRatio
+        : renderPixelRatio;
+      if (Math.abs(targetPixelRatio - activePixelRatio) < 0.01) return;
+      activePixelRatio = targetPixelRatio;
+      renderer.setPixelRatio(activePixelRatio);
+      canvas.dataset.webglPixelRatio = `${activePixelRatio}`;
+      resize();
+    }
+
     function getScrollProgress() {
       return THREE.MathUtils.clamp((window.scrollY - sceneTop) / sceneTravel, 0, 1);
     }
 
     function draw(now = performance.now()) {
       frame = 0;
+      if (!rendererReady) return;
+      syncRenderQuality();
+      if (!reduceMotion && now < nextFrameAt) {
+        if (active) frame = requestAnimationFrame(draw);
+        return;
+      }
+      nextFrameAt = now + 1000 / 30;
       const delta = Math.min(0.05, Math.max(0.001, (now - lastTime) / 1000));
       lastTime = now;
       const progress = getScrollProgress();
@@ -253,13 +288,17 @@ if (canvas && sceneElement) {
 
     function start() {
       active = true;
+      sceneElement.classList.add("is-runtime-active");
       lastTime = performance.now();
       updateSceneMetrics();
-      if (!frame) frame = requestAnimationFrame(draw);
+      rendererWarmPromise?.then(() => {
+        if (active && !frame) frame = requestAnimationFrame(draw);
+      });
     }
 
     function stop() {
       active = false;
+      sceneElement.classList.remove("is-runtime-active");
       if (frame) cancelAnimationFrame(frame);
       frame = 0;
     }
@@ -272,7 +311,7 @@ if (canvas && sceneElement) {
     }, { rootMargin: "20% 0px" });
     visibilityObserver.observe(sceneElement);
 
-    window.addEventListener("pointermove", (event) => {
+    sceneElement.addEventListener("pointermove", (event) => {
       pointerX = event.clientX / window.innerWidth * 2 - 1;
       pointerY = -(event.clientY / window.innerHeight * 2 - 1);
     }, { passive: true });
@@ -339,7 +378,16 @@ if (canvas && sceneElement) {
     });
 
     resize();
-    draw();
+    rendererWarmPromise = Promise.resolve(
+      typeof renderer.compileAsync === "function"
+        ? renderer.compileAsync(scene, camera)
+        : renderer.compile(scene, camera),
+    ).catch(() => undefined).then(() => {
+      renderer.render(scene, camera);
+      rendererReady = true;
+      canvas.dataset.webglWarm = "true";
+      if (active && !frame) frame = requestAnimationFrame(draw);
+    });
   } catch (error) {
     document.documentElement.classList.add("webgl-unavailable");
     console.warn("WebGL scene unavailable", error);

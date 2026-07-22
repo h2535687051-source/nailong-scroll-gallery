@@ -57,7 +57,10 @@ let brandIntroFinished = false;
 let cardsUnlocked = !cardsEntryAction || prefersReducedMotion;
 let cardsPreloaded = false;
 let musicRequested = true;
+let backgroundMusicObjectUrl = "";
 const optionalModules = new Map();
+let lastScrollActivity = performance.now();
+let scrollIdleTimer = 0;
 
 function loadOptionalModule(src) {
   if (optionalModules.has(src)) return optionalModules.get(src);
@@ -74,11 +77,16 @@ function loadOptionalModule(src) {
 }
 
 function scheduleOptionalVisuals() {
-  const loadCursor = () => loadOptionalModule("cursor-3d.js?v=20260722-fbx-v2").catch(() => {});
-  if (window.requestIdleCallback) {
-    window.requestIdleCallback(loadCursor, { timeout: 900 });
+  const loadCursor = () => loadOptionalModule("cursor-3d.js?v=20260722-fbx-v3").catch(() => {});
+  if (manifestoScene && window.IntersectionObserver) {
+    const cursorObserver = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      cursorObserver.disconnect();
+      runAfterScrollIdle(loadCursor, 1800, 1200);
+    }, { rootMargin: "-20% 0px -45% 0px", threshold: 0 });
+    cursorObserver.observe(manifestoScene);
   } else {
-    window.setTimeout(loadCursor, 180);
+    runAfterScrollIdle(loadCursor, 3200, 1200);
   }
 
   const prologScene = document.querySelector(".prolog-scene");
@@ -86,9 +94,32 @@ function scheduleOptionalVisuals() {
   const observer = new IntersectionObserver((entries) => {
     if (!entries.some((entry) => entry.isIntersecting)) return;
     observer.disconnect();
-    loadOptionalModule("webgl.js?v=20260722-fluid-v9").catch(() => {});
-  }, { rootMargin: "140% 0px" });
+    runAfterScrollIdle(
+      () => loadOptionalModule("webgl.js?v=20260722-fluid-v10").catch(() => {}),
+      0,
+      420,
+    );
+  }, { rootMargin: "45% 0px" });
   observer.observe(prologScene);
+}
+
+function runAfterScrollIdle(callback, minimumDelay = 0, quietWindow = 320) {
+  const earliest = performance.now() + minimumDelay;
+  const attempt = () => {
+    const now = performance.now();
+    const waitFor = Math.max(earliest - now, quietWindow - (now - lastScrollActivity));
+    if (waitFor > 0) {
+      window.setTimeout(attempt, Math.min(240, Math.max(32, waitFor)));
+      return;
+    }
+
+    if (window.requestIdleCallback) {
+      window.requestIdleCallback(callback, { timeout: 1200 });
+    } else {
+      window.setTimeout(callback, 0);
+    }
+  };
+  window.setTimeout(attempt, minimumDelay);
 }
 
 function hydrateBackgroundMusic() {
@@ -98,6 +129,41 @@ function hydrateBackgroundMusic() {
   source.src = source.dataset.src;
   source.removeAttribute("data-src");
   backgroundMusic.load();
+}
+
+async function prepareBackgroundMusic() {
+  if (!backgroundMusic) return Promise.resolve();
+  const source = backgroundMusic.querySelector("source[data-src]");
+  if (source?.dataset.src) {
+    try {
+      const response = await fetch(source.dataset.src, { cache: "force-cache" });
+      if (!response.ok) throw new Error(`Music preload failed: ${response.status}`);
+      const blob = await response.blob();
+      backgroundMusicObjectUrl = URL.createObjectURL(blob);
+      source.src = backgroundMusicObjectUrl;
+      source.removeAttribute("data-src");
+      backgroundMusic.preload = "auto";
+      backgroundMusic.load();
+    } catch {
+      hydrateBackgroundMusic();
+    }
+  }
+  if (backgroundMusic.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    let timer = 0;
+    const finish = () => {
+      window.clearTimeout(timer);
+      backgroundMusic.removeEventListener("canplay", finish);
+      backgroundMusic.removeEventListener("error", finish);
+      resolve();
+    };
+    backgroundMusic.addEventListener("canplay", finish, { once: true });
+    backgroundMusic.addEventListener("error", finish, { once: true });
+    timer = window.setTimeout(finish, 2200);
+  });
 }
 
 function updateMusicControl() {
@@ -165,38 +231,6 @@ function settleAfter(promise, timeout = 1600) {
   ]);
 }
 
-function nextPaint() {
-  return new Promise((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(resolve));
-  });
-}
-
-async function warmSceneCompositor(forceLoaderBlend = true) {
-  if (!siteLoader || !manifestoPanel) return;
-
-  const loaderOpacity = siteLoader.style.opacity;
-  const loaderTransition = siteLoader.style.transition;
-  const panelTransform = manifestoPanel.style.transform;
-  const panelTransition = manifestoPanel.style.transition;
-
-  if (forceLoaderBlend) {
-    siteLoader.style.transition = "none";
-    siteLoader.style.opacity = "0.999";
-  }
-  manifestoPanel.style.transition = "none";
-  manifestoPanel.style.transform = "translate3d(0, 0, 0)";
-  await nextPaint();
-
-  manifestoPanel.style.transform = panelTransform;
-  await nextPaint();
-
-  if (forceLoaderBlend) {
-    siteLoader.style.opacity = loaderOpacity;
-    siteLoader.style.transition = loaderTransition;
-  }
-  manifestoPanel.style.transition = panelTransition;
-}
-
 function renderLoaderProgress() {
   if (!siteLoader || !siteLoaderProgress) return;
 
@@ -239,6 +273,7 @@ function finishBrandIntro() {
   brandIntro.classList.add("is-leaving");
 
   window.setTimeout(() => {
+    document.body.classList.add("brand-complete");
     brandIntro.remove();
     startSiteLoader();
   }, 520);
@@ -246,6 +281,7 @@ function finishBrandIntro() {
 
 function startBrandIntro() {
   if (!brandIntro || prefersReducedMotion) {
+    document.body.classList.add("brand-complete");
     brandIntro?.remove();
     startSiteLoader();
     return;
@@ -279,12 +315,14 @@ function startSiteLoader() {
   if (heroPoster?.dataset.src && !heroPoster.getAttribute("src")) heroPoster.src = heroPoster.dataset.src;
   if (video?.dataset.poster) video.poster = video.dataset.poster;
   const fontReady = settleAfter(document.fonts?.ready || Promise.resolve(), 1400);
+  const heroPreparation = prepareHeroVideo();
+  const musicPreparation = heroPreparation.then(prepareBackgroundMusic);
   const essentialTasks = [
     waitForFirstVideoFrame(siteLoaderVideo, 1600),
     waitForImage(heroPoster),
     fontReady,
-    prepareHeroVideo(),
-    warmSceneCompositor(false),
+    heroPreparation,
+    musicPreparation,
   ];
   let completedTasks = 0;
 
@@ -313,7 +351,7 @@ async function enterSite() {
   loaderReady = false;
   cancelAnimationFrame(loaderFrame);
   siteLoader.classList.add("is-leaving");
-  await warmSceneCompositor(false);
+  siteLoaderVideo?.pause();
   document.body.classList.remove("is-loading");
   playBackgroundMusic();
   scheduleSecondaryScrubHydration();
@@ -404,7 +442,7 @@ function hydrateScrubVideoBlob(scrubber) {
     if (element.error) throw element.error;
 
     scrubber.hydrated = true;
-    await warmScrubDecoder(scrubber);
+    if (element === video) await warmScrubDecoder(scrubber);
     return element;
   })().catch(async (error) => {
     scrubber.hydrateFailed = true;
@@ -453,20 +491,19 @@ function scheduleSecondaryScrubHydration() {
     (previous, scrubber) => previous.then(() => promoteScrubPreload(scrubber)),
     Promise.resolve(),
   );
-  const runWhenIdle = () => {
-    if (window.requestIdleCallback) {
-      window.requestIdleCallback(start, { timeout: 1400 });
-    } else {
-      window.setTimeout(start, 320);
-    }
-  };
+  const begin = () => runAfterScrollIdle(start, 0, 420);
 
-  // Hydrate media in sequence. The browser can reuse the hero decoder once
-  // its first frame is ready instead of competing with the next scroll scene.
-  const heroScrubber = scrubVideos.find(({ element }) => element === video);
-  Promise.resolve(heroScrubber?.hydratePromise || prepareHeroVideo())
-    .catch(() => {})
-    .finally(runWhenIdle);
+  if (!manifestoScene || !window.IntersectionObserver) {
+    begin();
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    if (!entries.some((entry) => entry.isIntersecting)) return;
+    observer.disconnect();
+    begin();
+  }, { rootMargin: "-5% 0px -94% 0px", threshold: 0 });
+  observer.observe(manifestoScene);
 }
 
 let renderRequest = 0;
@@ -826,24 +863,18 @@ function smoothSceneProgress(current, target, deltaTime) {
 }
 
 function updateCharacters(progress) {
-  const staggerWindow = 0.2;
   const animationEnd = 0.52;
   const dropDistance = Math.max(120, hero.clientHeight * 0.24);
-  const lastIndex = Math.max(1, characters.length - 1);
+  const localProgress = clamp(progress / animationEnd);
+  const easedDrop = 1 - Math.pow(1 - localProgress, 3);
+  const squeeze = Math.sin(localProgress * Math.PI);
+  const scaleX = 1 - squeeze * 0.1;
+  const scaleY = 1 + squeeze * 0.045;
 
-  characters.forEach((character, index) => {
-    const start = (index / lastIndex) * staggerWindow;
-    const localProgress = clamp((progress - start) / (animationEnd - start));
-    const easedDrop = 1 - Math.pow(1 - localProgress, 3);
-    const squeeze = Math.sin(localProgress * Math.PI);
-    const scaleX = 1 - squeeze * 0.18;
-    const scaleY = 1 + squeeze * 0.08;
-
-    character.style.opacity = `${1 - localProgress}`;
-    character.style.transform =
-      `translate3d(0, ${easedDrop * dropDistance}px, 0) ` +
-      `scale(${scaleX}, ${scaleY})`;
-  });
+  wordmark.style.opacity = `${1 - localProgress}`;
+  wordmark.style.transform =
+    `translate3d(-50%, ${easedDrop * dropDistance}px, 0) ` +
+    `scale(${scaleX}, ${scaleY})`;
 }
 
 function updateScrollPrompt(progress) {
@@ -875,11 +906,9 @@ function updateScrollReveals(progress) {
     const easedProgress = 1 - Math.pow(1 - localProgress, 3);
     const inverseProgress = 1 - easedProgress;
     const translateX = inverseProgress * (compactViewport ? 38 : 72);
-    const blur = inverseProgress * (compactViewport ? 3 : 5);
     const scale = 0.94 + easedProgress * 0.06;
 
     element.style.opacity = `${easedProgress}`;
-    element.style.filter = `blur(${blur}px)`;
     element.style.transform =
       `translate3d(${translateX}px, 0, 0) scale(${scale})`;
   });
@@ -1195,6 +1224,26 @@ function seekVideoFrameAndWait(element, time, timeout = 900) {
   });
 }
 
+function waitForPresentedVideoFrame(element, timeout = 260) {
+  if (typeof element.requestVideoFrameCallback !== "function") {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    let frameCallback = 0;
+    let timer = 0;
+    const finish = () => {
+      window.clearTimeout(timer);
+      if (frameCallback && typeof element.cancelVideoFrameCallback === "function") {
+        element.cancelVideoFrameCallback(frameCallback);
+      }
+      resolve();
+    };
+    frameCallback = element.requestVideoFrameCallback(finish);
+    timer = window.setTimeout(finish, timeout);
+  });
+}
+
 function warmScrubDecoder(scrubber) {
   if (!scrubber?.element || scrubber.decoderWarmed) {
     return Promise.resolve();
@@ -1207,17 +1256,26 @@ function warmScrubDecoder(scrubber) {
     await waitForFirstVideoFrame(element, 1800);
     if (!Number.isFinite(element.duration) || element.duration <= 0) return;
 
-    const targetTime = clamp(
-      scrubber.getProgress() * element.duration,
-      0,
-      Math.max(0, element.duration - 0.001),
-    );
-    await seekVideoFrameAndWait(element, targetTime);
+    const initialProgress = clamp(scrubber.getProgress());
+    const warmProgresses = element === video
+      ? [0.18, 0.42, 0.68, 0.92, initialProgress]
+      : [initialProgress];
+    let targetTime = 0;
+    for (const progress of warmProgresses) {
+      targetTime = clamp(
+        progress * element.duration,
+        0,
+        Math.max(0, element.duration - 0.001),
+      );
+      await seekVideoFrameAndWait(element, targetTime, 1200);
+      await waitForPresentedVideoFrame(element);
+    }
     element.pause();
     scrubber.currentTime = targetTime;
     scrubber.targetTime = targetTime;
     scrubber.primed = true;
     scrubber.decoderWarmed = true;
+    element.dataset.decoderWarm = "true";
   })().finally(() => {
     scrubber.warming = false;
     scheduleRender();
@@ -1250,7 +1308,6 @@ function setupScrubVideo(scrubber) {
     scrubber.targetTime = scrubber.getProgress() * element.duration;
     scrubber.currentTime = scrubber.targetTime;
     scrubber.primed = true;
-    if (scrubber.autoPreload && element !== video) warmScrubDecoder(scrubber);
     scheduleRender();
   };
 
@@ -1283,6 +1340,7 @@ function updateScrubVideo(scrubber, sceneState) {
 
   if (scrubber.scene) {
     const sceneBounds = sceneState?.bounds || scrubber.scene.getBoundingClientRect();
+    if (sceneBounds.width <= 0 || sceneBounds.height <= 0) return false;
     const isHeroScrubber = element === video;
     const leadIn = isHeroScrubber ? 1.08 : 1.05;
     const leadOut = isHeroScrubber ? 0.12 : 0.18;
@@ -1299,7 +1357,7 @@ function updateScrubVideo(scrubber, sceneState) {
     if (
       !isHeroScrubber &&
       progress < 0.02 &&
-      sceneBounds.top > viewportHeight * 0.45
+      sceneBounds.top > viewportHeight * 0.05
     ) {
       return false;
     }
@@ -1539,6 +1597,14 @@ function invalidateRender() {
 }
 
 function handleScroll() {
+  lastScrollActivity = performance.now();
+  if (!document.documentElement.classList.contains("is-scrolling")) {
+    document.documentElement.classList.add("is-scrolling");
+  }
+  window.clearTimeout(scrollIdleTimer);
+  scrollIdleTimer = window.setTimeout(() => {
+    document.documentElement.classList.remove("is-scrolling");
+  }, 180);
   scheduleRender();
 }
 
@@ -1650,10 +1716,19 @@ window.addEventListener("pagehide", (event) => {
     URL.revokeObjectURL(scrubber.objectUrl);
     scrubber.objectUrl = "";
   });
+  if (backgroundMusicObjectUrl) {
+    URL.revokeObjectURL(backgroundMusicObjectUrl);
+    backgroundMusicObjectUrl = "";
+  }
 });
 window.addEventListener("resize", invalidateRender, { passive: true });
 if (finePointerQuery.matches && orbitTrack) {
-  window.addEventListener("pointermove", handlePointerMove, { passive: true });
+  orbitTrack.addEventListener("pointermove", handlePointerMove, { passive: true });
+  orbitTrack.addEventListener("pointerleave", () => {
+    orbitPointerTargetX = 0;
+    orbitPointerTargetY = 0;
+    scheduleRender();
+  }, { passive: true });
 }
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) invalidateRender();
@@ -1756,6 +1831,7 @@ function mountOverdriveExperience() {
   let selectedCardIndex = -1;
   let lastPointerX = window.innerWidth / 2;
   let lastPointerY = window.innerHeight / 2;
+  let pointerStyleFrame = 0;
   let activeChapterIndex = -1;
   let lastRailProgress = Number.NaN;
   const galleryState = {
@@ -1772,6 +1848,7 @@ function mountOverdriveExperience() {
     lastScrollTime: 0,
     lastScrollTarget: 0,
     frame: 0,
+    nextFrameAt: 0,
     detailCard: null,
     returnRect: null,
     returnRotation: 0,
@@ -1796,11 +1873,24 @@ function mountOverdriveExperience() {
   function unlockGallery() {
     if (!galleryStage || galleryEntry?.classList.contains("is-leaving")) return;
     const warmIndex = Math.max(0, galleryState.activeIndex);
-    warmGalleryNetwork(warmIndex);
     warmGalleryNeighborhood(warmIndex, 1);
+    runAfterScrollIdle(() => warmGalleryNetwork(warmIndex), 1400, 700);
     galleryEntry?.classList.add("is-leaving");
     galleryEntryAction?.setAttribute("aria-busy", "true");
     galleryStage.removeAttribute("data-gallery-locked");
+    galleryStage.classList.add("is-gallery-unlocked");
+    if (galleryCurtain && !prefersReducedMotion) {
+      galleryState.themeAnimation?.cancel();
+      galleryState.themeAnimation = galleryCurtain.animate([
+        { clipPath: "inset(0 0 0 100%)", offset: 0 },
+        { clipPath: "inset(0)", offset: .42 },
+        { clipPath: "inset(0)", offset: .54 },
+        { clipPath: "inset(0 100% 0 0)", offset: 1 },
+      ], { duration: 860, easing: "cubic-bezier(.76,0,.24,1)" });
+      galleryState.themeAnimation.onfinish = () => {
+        galleryState.themeAnimation = null;
+      };
+    }
     window.setTimeout(() => {
       galleryStage.setAttribute("aria-busy", "false");
       galleryEntry?.classList.add("is-gone");
@@ -1966,10 +2056,10 @@ function mountOverdriveExperience() {
 
   function warmGalleryNeighborhood(index, direction = 1) {
     const forward = direction >= 0 ? 1 : -1;
-    [index, index + forward, index - forward, index + forward * 2, index - forward * 2, index + forward * 3]
+    [index, index + forward, index - forward, index + forward * 2]
       .forEach((cardIndex, order) => {
       if (cardIndex < 0 || cardIndex >= galleryCards.length) return;
-      warmGalleryImage(cardIndex, order < 3 ? "high" : "auto", true);
+      warmGalleryImage(cardIndex, order < 2 ? "high" : "auto", order < 2);
     });
   }
 
@@ -2161,6 +2251,11 @@ function mountOverdriveExperience() {
 
     const maximumIndex = galleryCards.length - 1;
     const now = performance.now();
+    if (!prefersReducedMotion && now < galleryState.nextFrameAt) {
+      requestGalleryFrame();
+      return;
+    }
+    galleryState.nextFrameAt = now + 1000 / 30;
     if (!galleryState.dragging && Math.abs(galleryState.velocity) > 0.0005) {
       galleryState.dragOffset += galleryState.velocity;
       galleryState.velocity *= 0.89;
@@ -2230,6 +2325,7 @@ function mountOverdriveExperience() {
     const moving = galleryState.dragging
       || Math.abs(target - galleryState.position) > 0.001
       || Math.abs(galleryState.velocity) > 0.001;
+    galleryStage?.classList.toggle("is-gallery-moving", moving);
     if (moving) requestGalleryFrame();
   }
 
@@ -2677,9 +2773,9 @@ function mountOverdriveExperience() {
   if (galleryScene && galleryCards.length) {
     const galleryWarmObserver = new IntersectionObserver((entries, observer) => {
       if (!entries.some((entry) => entry.isIntersecting)) return;
-      warmGalleryNetwork(Math.max(0, galleryState.activeIndex));
+      warmGalleryNeighborhood(Math.max(0, galleryState.activeIndex), 1);
       observer.disconnect();
-    }, { rootMargin: "100% 0px" });
+    }, { rootMargin: "25% 0px" });
     galleryWarmObserver.observe(galleryScene);
   }
 
@@ -2687,11 +2783,18 @@ function mountOverdriveExperience() {
     window.addEventListener("pointermove", (event) => {
       lastPointerX = event.clientX;
       lastPointerY = event.clientY;
-      requestOverdriveRender();
-      const tiltX = clamp((event.clientX / Math.max(1, window.innerWidth) - 0.5) * 14, -8, 8);
-      const tiltY = clamp((0.5 - event.clientY / Math.max(1, window.innerHeight)) * 14, -8, 8);
-      root.style.setProperty("--cursor-tilt-x", `${tiltX}deg`);
-      root.style.setProperty("--cursor-tilt-y", `${tiltY}deg`);
+      if (!pointerStyleFrame) {
+        pointerStyleFrame = requestAnimationFrame(() => {
+          pointerStyleFrame = 0;
+          const tiltX = clamp((lastPointerX / Math.max(1, window.innerWidth) - 0.5) * 14, -8, 8);
+          const tiltY = clamp((0.5 - lastPointerY / Math.max(1, window.innerHeight)) * 14, -8, 8);
+          root.style.setProperty("--cursor-x", `${lastPointerX}px`);
+          root.style.setProperty("--cursor-y", `${lastPointerY}px`);
+          root.style.setProperty("--cursor-tilt-x", `${tiltX}deg`);
+          root.style.setProperty("--cursor-tilt-y", `${tiltY}deg`);
+        });
+      }
+      if (event.target.closest?.(".encore-scene")) requestOverdriveRender();
     }, { passive: true });
     document.querySelectorAll("a, button, .flip-card").forEach((interactive) => {
       interactive.addEventListener("pointerenter", () => cursorAura.classList.add("is-hovering"));

@@ -275,6 +275,10 @@ function finishBrandIntro() {
   window.setTimeout(() => {
     document.body.classList.add("brand-complete");
     brandIntro.remove();
+    requestAnimationFrame(() => {
+      refreshSupplementalLayouts?.();
+      invalidateRender();
+    });
     startSiteLoader();
   }, 520);
 }
@@ -512,6 +516,7 @@ function scheduleSecondaryScrubHydration() {
 
 let renderRequest = 0;
 let renderSupplementalFrame = null;
+let refreshSupplementalLayouts = null;
 let lastHeroProgress = Number.NaN;
 let lastManifestoProgress = Number.NaN;
 let lastCardsProgress = Number.NaN;
@@ -2689,6 +2694,11 @@ function mountOverdriveExperience() {
 
   galleryViewport?.addEventListener("pointerup", endGalleryDrag);
   galleryViewport?.addEventListener("pointercancel", endGalleryDrag);
+  galleryViewport?.addEventListener("wheel", () => {
+    if (galleryState.detailCard) return;
+    galleryState.dragOffset = 0;
+    galleryState.velocity = 0;
+  }, { passive: true });
 
   galleryCards.forEach((card, index) => {
     card.addEventListener("pointermove", (event) => {
@@ -2882,6 +2892,7 @@ function mountOverdriveExperience() {
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) requestOverdriveRender();
   });
+  refreshSupplementalLayouts = refreshOverdriveLayouts;
   refreshOverdriveLayouts();
   document.fonts?.ready?.then(() => {
     refreshOverdriveLayouts();

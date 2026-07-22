@@ -10,28 +10,25 @@
     <meta name="theme-color" content="#b7153a" />
     <title>树成林 AI · 奶龙宇宙</title>
     <link rel="icon" href="assets/loader-nailong.webp" type="image/webp" />
-    <link
-      rel="preload"
-      as="image"
-      href="assets/loader-nailong.webp"
-      type="image/webp"
-      fetchpriority="high"
-    />
-    <link
-      rel="preload"
-      as="image"
-      href="assets/hero-poster-clear.webp"
-      type="image/webp"
-      fetchpriority="high"
-    />
-    <link
-      rel="preload"
-      as="image"
-      href="assets/orbit-poster-v3.webp"
-      type="image/webp"
-      fetchpriority="high"
-    />
-    <link rel="stylesheet" href="styles.css?v=20260722-fbx-v3" />
+    <style>
+      html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #f7fffd; font-family: Arial, sans-serif; }
+      body > :not(.brand-intro) { visibility: hidden; }
+      .brand-intro { position: fixed; inset: 0; z-index: 11000; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding: 0; border: 0; background: #f7fffd; color: #0b8168; text-align: center; }
+      .brand-intro__stage { display: block; }
+      .brand-intro__badge { position: relative; display: block; width: 156px; height: 156px; margin: 0 auto; }
+      .brand-intro__ring { width: 100%; height: 100%; transform: rotate(-90deg); }
+      .brand-intro__ring circle { fill: none; stroke: #14a98a; stroke-width: 3; }
+      .brand-intro__ring-track { opacity: .16; }
+      .brand-intro__ring-spin { opacity: .5; stroke-dasharray: 44 452; }
+      .brand-intro__name, .brand-intro__line, .brand-intro__slogan { display: block; }
+      .brand-intro__name { margin-top: 24px; }
+      .brand-intro__cn { display: flex; justify-content: center; gap: 8px; }
+      .brand-intro__cn i { font-style: normal; font-size: 42px; font-weight: 900; }
+      .brand-intro__en { margin-top: 8px; font-size: 12px; font-weight: 700; }
+      .brand-intro__line { width: 180px; height: 1px; margin: 18px auto; background: #14a98a; }
+      .brand-intro__slogan { font-size: 13px; color: #315e54; }
+      .styles-ready body > :not(.brand-intro) { visibility: visible; }
+    </style>
   </head>
   <body class="is-loading">
     <button
@@ -84,12 +81,12 @@
           muted
           loop
           playsinline
-          preload="auto"
-          poster="assets/loader-nailong.webp"
+          preload="none"
+          data-poster="assets/loader-nailong.webp"
           tabindex="-1"
           disablepictureinpicture
         >
-          <source src="assets/loader-smile.mp4" type="video/mp4" />
+          <source data-src="assets/loader-smile.mp4" type="video/mp4" />
         </video>
       </span>
 
@@ -147,19 +144,18 @@
         <section class="hero" id="top" aria-label="Shu Cheng Lin AI">
           <img
             class="hero-poster-frame"
-            src="assets/hero-poster-clear.webp"
+            data-src="assets/hero-poster-clear.webp"
             alt=""
             aria-hidden="true"
             decoding="async"
-            fetchpriority="high"
+            loading="lazy"
           />
           <video
             class="scroll-video"
             muted
             playsinline
             preload="none"
-            poster="assets/hero-poster-clear.webp"
-            fetchpriority="high"
+            data-poster="assets/hero-poster-clear.webp"
             data-frame-rate="30"
             aria-hidden="true"
             tabindex="-1"
@@ -240,7 +236,7 @@
               muted
               playsinline
               preload="none"
-              poster="assets/orbit-poster-v3.webp"
+              data-poster="assets/orbit-poster-v3.webp"
               fetchpriority="low"
               data-frame-rate="30"
               aria-hidden="true"
@@ -346,61 +342,61 @@
               <div class="cards-grid">
                 <button class="flip-card" type="button" aria-pressed="false" aria-label="翻开卡片 01" style="--card-index: 0">
                   <span class="flip-card__inner">
-                    <span class="flip-card__face flip-card__face--back" aria-hidden="true"><img class="flip-card__back-image" src="assets/cards/card-back-celestial.webp" alt="" /></span>
+                    <span class="flip-card__face flip-card__face--back" aria-hidden="true"><img class="flip-card__back-image" src="assets/cards/card-back-celestial.webp" alt="" loading="lazy" decoding="async" /></span>
                     <span class="flip-card__face flip-card__face--photo"><img src="assets/cards/card-01.webp" alt="彩虹装奶龙抱着福字灯笼" loading="lazy" decoding="async" /></span>
                   </span>
                 </button>
                 <button class="flip-card" type="button" aria-pressed="false" aria-label="翻开卡片 02" style="--card-index: 1">
                   <span class="flip-card__inner">
-                    <span class="flip-card__face flip-card__face--back" aria-hidden="true"><img class="flip-card__back-image" src="assets/cards/card-back-celestial.webp" alt="" /></span>
+                    <span class="flip-card__face flip-card__face--back" aria-hidden="true"><img class="flip-card__back-image" src="assets/cards/card-back-celestial.webp" alt="" loading="lazy" decoding="async" /></span>
                     <span class="flip-card__face flip-card__face--photo"><img src="assets/cards/card-02.webp" alt="穿粉白洛丽塔裙的奶龙" loading="lazy" decoding="async" /></span>
                   </span>
                 </button>
                 <button class="flip-card" type="button" aria-pressed="false" aria-label="翻开卡片 03" style="--card-index: 2">
                   <span class="flip-card__inner">
-                    <span class="flip-card__face flip-card__face--back" aria-hidden="true"><img class="flip-card__back-image" src="assets/cards/card-back-celestial.webp" alt="" /></span>
+                    <span class="flip-card__face flip-card__face--back" aria-hidden="true"><img class="flip-card__back-image" src="assets/cards/card-back-celestial.webp" alt="" loading="lazy" decoding="async" /></span>
                     <span class="flip-card__face flip-card__face--photo"><img src="assets/cards/card-03.webp" alt="穿二十四号球衣大笑的人物" loading="lazy" decoding="async" /></span>
                   </span>
                 </button>
                 <button class="flip-card" type="button" aria-pressed="false" aria-label="翻开卡片 04" style="--card-index: 3">
                   <span class="flip-card__inner">
-                    <span class="flip-card__face flip-card__face--back" aria-hidden="true"><img class="flip-card__back-image" src="assets/cards/card-back-celestial.webp" alt="" /></span>
+                    <span class="flip-card__face flip-card__face--back" aria-hidden="true"><img class="flip-card__back-image" src="assets/cards/card-back-celestial.webp" alt="" loading="lazy" decoding="async" /></span>
                     <span class="flip-card__face flip-card__face--photo"><img src="assets/cards/card-04.webp" alt="穿红色花袄的奶龙" loading="lazy" decoding="async" /></span>
                   </span>
                 </button>
                 <button class="flip-card" type="button" aria-pressed="false" aria-label="翻开卡片 05" style="--card-index: 4">
                   <span class="flip-card__inner">
-                    <span class="flip-card__face flip-card__face--back" aria-hidden="true"><img class="flip-card__back-image" src="assets/cards/card-back-celestial.webp" alt="" /></span>
+                    <span class="flip-card__face flip-card__face--back" aria-hidden="true"><img class="flip-card__back-image" src="assets/cards/card-back-celestial.webp" alt="" loading="lazy" decoding="async" /></span>
                     <span class="flip-card__face flip-card__face--photo"><img src="assets/cards/card-05.webp" alt="红白条纹造型奶龙" loading="lazy" decoding="async" /></span>
                   </span>
                 </button>
                 <button class="flip-card" type="button" aria-pressed="false" aria-label="翻开卡片 06" style="--card-index: 5">
                   <span class="flip-card__inner">
-                    <span class="flip-card__face flip-card__face--back" aria-hidden="true"><img class="flip-card__back-image" src="assets/cards/card-back-celestial.webp" alt="" /></span>
+                    <span class="flip-card__face flip-card__face--back" aria-hidden="true"><img class="flip-card__back-image" src="assets/cards/card-back-celestial.webp" alt="" loading="lazy" decoding="async" /></span>
                     <span class="flip-card__face flip-card__face--photo"><img src="assets/cards/card-06.webp" alt="穿白裙摆出手势的奶龙" loading="lazy" decoding="async" /></span>
                   </span>
                 </button>
                 <button class="flip-card" type="button" aria-pressed="false" aria-label="翻开卡片 07" style="--card-index: 6">
                   <span class="flip-card__inner">
-                    <span class="flip-card__face flip-card__face--back" aria-hidden="true"><img class="flip-card__back-image" src="assets/cards/card-back-celestial.webp" alt="" /></span>
+                    <span class="flip-card__face flip-card__face--back" aria-hidden="true"><img class="flip-card__back-image" src="assets/cards/card-back-celestial.webp" alt="" loading="lazy" decoding="async" /></span>
                     <span class="flip-card__face flip-card__face--photo"><img src="assets/cards/card-07.webp" alt="珍珠奶茶造型人物" loading="lazy" decoding="async" /></span>
                   </span>
                 </button>
                 <button class="flip-card" type="button" aria-pressed="false" aria-label="翻开卡片 08" style="--card-index: 7">
                   <span class="flip-card__inner">
-                    <span class="flip-card__face flip-card__face--back" aria-hidden="true"><img class="flip-card__back-image" src="assets/cards/card-back-celestial.webp" alt="" /></span>
+                    <span class="flip-card__face flip-card__face--back" aria-hidden="true"><img class="flip-card__back-image" src="assets/cards/card-back-celestial.webp" alt="" loading="lazy" decoding="async" /></span>
                     <span class="flip-card__face flip-card__face--photo"><img src="assets/cards/card-08.webp" alt="粉色造型做出爱心手势的奶龙" loading="lazy" decoding="async" /></span>
                   </span>
                 </button>
                 <button class="flip-card" type="button" aria-pressed="false" aria-label="翻开卡片 09" style="--card-index: 8">
                   <span class="flip-card__inner">
-                    <span class="flip-card__face flip-card__face--back" aria-hidden="true"><img class="flip-card__back-image" src="assets/cards/card-back-celestial.webp" alt="" /></span>
+                    <span class="flip-card__face flip-card__face--back" aria-hidden="true"><img class="flip-card__back-image" src="assets/cards/card-back-celestial.webp" alt="" loading="lazy" decoding="async" /></span>
                     <span class="flip-card__face flip-card__face--photo"><img src="assets/cards/card-09.webp" alt="古装胡须造型奶龙" loading="lazy" decoding="async" /></span>
                   </span>
                 </button>
                 <button class="flip-card" type="button" aria-pressed="false" aria-label="翻开卡片 10" style="--card-index: 9">
                   <span class="flip-card__inner">
-                    <span class="flip-card__face flip-card__face--back" aria-hidden="true"><img class="flip-card__back-image" src="assets/cards/card-back-celestial.webp" alt="" /></span>
+                    <span class="flip-card__face flip-card__face--back" aria-hidden="true"><img class="flip-card__back-image" src="assets/cards/card-back-celestial.webp" alt="" loading="lazy" decoding="async" /></span>
                     <span class="flip-card__face flip-card__face--photo"><img src="assets/cards/card-10.webp" alt="在教室讲台前授课的奶龙" loading="lazy" decoding="async" /></span>
                   </span>
                 </button>
@@ -580,8 +576,19 @@
       </div>
     </dialog>
 
-    <script src="script.js?v=20260722-fluid-v11"></script>
-    <script type="module" src="webgl.js?v=20260722-fluid-v9"></script>
-    <script type="module" src="cursor-3d.js?v=20260722-fbx-v2"></script>
+    <script>
+      window.addEventListener("load", () => {
+        const styles = document.createElement("link");
+        styles.rel = "stylesheet";
+        styles.href = "styles.css?v=20260722-gallery-v14";
+        styles.addEventListener("load", () => {
+          document.documentElement.classList.add("styles-ready");
+          const runtime = document.createElement("script");
+          runtime.src = "script.js?v=20260722-gallery-v14";
+          document.body.append(runtime);
+        }, { once: true });
+        document.head.append(styles);
+      }, { once: true });
+    </script>
   </body>
 </html>

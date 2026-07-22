@@ -2949,9 +2949,6 @@ button {
   --card-width: 248px;
   --card-height: 292px;
   --presentation-accent: #e2bd63;
-  --orbit-saturation: .74;
-  --orbit-contrast: .94;
-  --orbit-meta-opacity: .5;
   position: absolute;
   top: 0;
   left: 0;
@@ -2966,8 +2963,10 @@ button {
   cursor: pointer;
   transform-origin: 50% 50%;
   transform-style: preserve-3d;
-  will-change: transform, opacity;
+  will-change: auto;
 }
+
+.orbit-card[data-orbit-rendered="1"] { will-change: transform, opacity; }
 
 .orbit-card::before,
 .orbit-card::after {
@@ -3007,10 +3006,10 @@ button {
   object-fit: var(--image-fit, contain);
   object-position: var(--image-position, 50% 50%);
   background: var(--image-bg, #f6f4ee);
-  filter: saturate(var(--orbit-saturation)) contrast(var(--orbit-contrast));
+  filter: none;
   pointer-events: none;
   transform: scale(var(--image-scale, 1.035)) translate3d(calc(var(--card-pointer-x, 0) * -5px), calc(var(--card-pointer-y, 0) * -5px), 0);
-  transition: transform 900ms var(--ease-expo), filter 420ms ease;
+  transition: transform 900ms var(--ease-expo);
 }
 
 .orbit-card--cover img { object-fit: cover; }
@@ -3062,13 +3061,14 @@ button {
   font-family: "Michroma", Arial, sans-serif;
   font-size: 7px;
   letter-spacing: 0;
-  opacity: var(--orbit-meta-opacity);
+  opacity: .55;
   text-shadow: 0 1px 0 rgba(255,255,255,.8);
   transition: opacity 320ms ease;
 }
 
 .orbit-card__meta b { color: var(--presentation-accent); font-weight: 400; }
 .orbit-card__meta em { overflow: hidden; font-style: normal; text-overflow: ellipsis; white-space: nowrap; }
+.orbit-card.is-active .orbit-card__meta { opacity: 1; }
 
 .orbit-card:hover .orbit-card__frame,
 .orbit-card:focus-visible .orbit-card__frame,
@@ -3834,9 +3834,8 @@ body.gallery-detail-open .chapter-rail { visibility: hidden; opacity: 0; }
     transform-style: preserve-3d;
   }
 
-  .orbit-card {
-    will-change: transform, opacity;
-  }
+  .orbit-card { will-change: auto; }
+  .orbit-card[data-orbit-rendered="1"] { will-change: transform, opacity; }
 
   .orbit-card__frame,
   .orbit-card:hover .orbit-card__frame,

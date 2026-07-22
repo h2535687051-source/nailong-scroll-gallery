@@ -54,6 +54,39 @@ let brandIntroTimer = 0;
 let brandIntroFinished = false;
 let cardsUnlocked = !cardsEntryAction || prefersReducedMotion;
 let cardsPreloaded = false;
+const optionalModules = new Map();
+
+function loadOptionalModule(src) {
+  if (optionalModules.has(src)) return optionalModules.get(src);
+  const promise = new Promise((resolve, reject) => {
+    const module = document.createElement("script");
+    module.type = "module";
+    module.src = src;
+    module.addEventListener("load", resolve, { once: true });
+    module.addEventListener("error", reject, { once: true });
+    document.body.append(module);
+  });
+  optionalModules.set(src, promise);
+  return promise;
+}
+
+function scheduleOptionalVisuals() {
+  const loadCursor = () => loadOptionalModule("cursor-3d.js?v=20260722-fbx-v2").catch(() => {});
+  if (window.requestIdleCallback) {
+    window.requestIdleCallback(loadCursor, { timeout: 900 });
+  } else {
+    window.setTimeout(loadCursor, 180);
+  }
+
+  const prologScene = document.querySelector(".prolog-scene");
+  if (!prologScene) return;
+  const observer = new IntersectionObserver((entries) => {
+    if (!entries.some((entry) => entry.isIntersecting)) return;
+    observer.disconnect();
+    loadOptionalModule("webgl.js?v=20260722-fluid-v9").catch(() => {});
+  }, { rootMargin: "140% 0px" });
+  observer.observe(prologScene);
+}
 
 function waitForImage(image) {
   if (!image) return Promise.resolve();
@@ -186,9 +219,18 @@ function startSiteLoader() {
   if (siteLoaderStarted) return;
   siteLoaderStarted = true;
   siteLoader.classList.remove("is-awaiting-brand");
+  if (siteLoaderVideo?.dataset.poster) siteLoaderVideo.poster = siteLoaderVideo.dataset.poster;
+  const loaderSource = siteLoaderVideo?.querySelector("source[data-src]");
+  if (loaderSource) {
+    loaderSource.src = loaderSource.dataset.src;
+    loaderSource.removeAttribute("data-src");
+    siteLoaderVideo.load();
+  }
   siteLoaderVideo?.play().catch(() => {});
 
   const heroPoster = document.querySelector(".hero-poster-frame");
+  if (heroPoster?.dataset.src && !heroPoster.getAttribute("src")) heroPoster.src = heroPoster.dataset.src;
+  if (video?.dataset.poster) video.poster = video.dataset.poster;
   const fontReady = settleAfter(document.fonts?.ready || Promise.resolve(), 1400);
   const essentialTasks = [
     waitForFirstVideoFrame(siteLoaderVideo, 1600),
@@ -227,6 +269,7 @@ async function enterSite() {
   await warmSceneCompositor(false);
   document.body.classList.remove("is-loading");
   scheduleSecondaryScrubHydration();
+  scheduleOptionalVisuals();
   window.setTimeout(() => siteLoader.remove(), 680);
 }
 
@@ -1694,6 +1737,9 @@ function mountOverdriveExperience() {
     warmedImages: new Set(),
     decodeQueue: new Set(),
     decodeTimer: 0,
+    decodedImages: new WeakSet(),
+    decodingImages: new WeakSet(),
+    networkWarmStarted: false,
   };
 
   const galleryUnlocked = !galleryEntryAction || prefersReducedMotion;
@@ -1701,6 +1747,9 @@ function mountOverdriveExperience() {
 
   function unlockGallery() {
     if (!galleryStage || galleryEntry?.classList.contains("is-leaving")) return;
+    const warmIndex = Math.max(0, galleryState.activeIndex);
+    warmGalleryNetwork(warmIndex);
+    warmGalleryNeighborhood(warmIndex, 1);
     galleryEntry?.classList.add("is-leaving");
     galleryEntryAction?.setAttribute("aria-busy", "true");
     galleryStage.removeAttribute("data-gallery-locked");
@@ -1802,8 +1851,29 @@ function mountOverdriveExperience() {
     card.style.setProperty("--image-scale", `${profile.imageScale || 1.035}`);
   });
 
-  function queueGalleryDecode(image) {
-    if (!image || galleryState.decodeQueue.has(image)) return;
+  function runGalleryDecode(image) {
+    if (
+      !image ||
+      galleryState.decodedImages.has(image) ||
+      galleryState.decodingImages.has(image)
+    ) return;
+
+    galleryState.decodingImages.add(image);
+    const decode = image.decode ? image.decode() : Promise.resolve();
+    decode.catch(() => undefined).finally(() => {
+      galleryState.decodingImages.delete(image);
+      if (image.complete && image.naturalWidth > 0) galleryState.decodedImages.add(image);
+    });
+  }
+
+  function queueGalleryDecode(image, urgent = false) {
+    if (!image || galleryState.decodedImages.has(image)) return;
+    if (urgent) {
+      galleryState.decodeQueue.delete(image);
+      runGalleryDecode(image);
+      return;
+    }
+    if (galleryState.decodeQueue.has(image)) return;
     galleryState.decodeQueue.add(image);
     if (galleryState.decodeTimer) return;
 
@@ -1816,7 +1886,7 @@ function mountOverdriveExperience() {
       const nextImage = galleryState.decodeQueue.values().next().value;
       if (!nextImage) return;
       galleryState.decodeQueue.delete(nextImage);
-      nextImage.decode?.().catch(() => undefined);
+      runGalleryDecode(nextImage);
       if (galleryState.decodeQueue.size) {
         galleryState.decodeTimer = window.setTimeout(flush, 90);
       }
@@ -1825,7 +1895,7 @@ function mountOverdriveExperience() {
     galleryState.decodeTimer = window.setTimeout(flush, 280);
   }
 
-  function warmGalleryImage(index, priority = "auto") {
+  function warmGalleryImage(index, priority = "auto", urgent = false, decode = true) {
     const card = galleryCards[index];
     const image = card?.querySelector("img");
     if (!card || !image) return;
@@ -1833,22 +1903,50 @@ function mountOverdriveExperience() {
     card.dataset.galleryWarmed = "true";
     image.loading = "eager";
     image.fetchPriority = priority;
-    if (galleryState.warmedImages.has(image)) return;
-
+    if (urgent) image.dataset.galleryDecodeUrgent = "true";
     galleryState.warmedImages.add(image);
-    const decodeImage = () => queueGalleryDecode(image);
+    if (!decode) return;
+
+    const decodeImage = () => queueGalleryDecode(image, image.dataset.galleryDecodeUrgent === "true");
     if (image.complete && image.naturalWidth > 0) {
       decodeImage();
-    } else {
+    } else if (image.dataset.galleryDecodeListener !== "true") {
+      image.dataset.galleryDecodeListener = "true";
       image.addEventListener("load", decodeImage, { once: true });
     }
   }
 
-  function warmGalleryNeighborhood(index) {
-    [index, index + 1, index - 1].forEach((cardIndex, order) => {
+  function warmGalleryNeighborhood(index, direction = 1) {
+    const forward = direction >= 0 ? 1 : -1;
+    [index, index + forward, index - forward, index + forward * 2, index - forward * 2, index + forward * 3]
+      .forEach((cardIndex, order) => {
       if (cardIndex < 0 || cardIndex >= galleryCards.length) return;
-      warmGalleryImage(cardIndex, order === 0 ? "high" : "auto");
+      warmGalleryImage(cardIndex, order < 3 ? "high" : "auto", true);
     });
+  }
+
+  function warmGalleryNetwork(origin = 0) {
+    if (galleryState.networkWarmStarted || !galleryCards.length) return;
+    galleryState.networkWarmStarted = true;
+
+    const order = galleryCards
+      .map((_, index) => index)
+      .sort((a, b) => Math.abs(a - origin) - Math.abs(b - origin));
+    let cursor = 0;
+    const warmNext = () => {
+      if (galleryState.dragging) {
+        window.setTimeout(warmNext, 180);
+        return;
+      }
+      const end = Math.min(cursor + 2, order.length);
+      while (cursor < end) {
+        const index = order[cursor];
+        warmGalleryImage(index, cursor < 4 ? "high" : "low", cursor < 4, cursor < 4);
+        cursor += 1;
+      }
+      if (cursor < order.length) window.setTimeout(warmNext, 44);
+    };
+    warmNext();
   }
 
   if (transitionGrid) {
@@ -1951,7 +2049,7 @@ function mountOverdriveExperience() {
     const direction = previousIndex < 0 || index >= previousIndex ? 1 : -1;
     const chapter = getGalleryChapter(index);
     galleryState.activeIndex = index;
-    warmGalleryNeighborhood(index);
+    warmGalleryNeighborhood(index, direction);
 
     if (galleryCurrent) galleryCurrent.textContent = String(index + 1).padStart(2, "0");
     setGalleryTheme(chapter, direction);
@@ -2042,7 +2140,7 @@ function mountOverdriveExperience() {
       const profile = galleryPresentationProfiles[index] || galleryPresentationProfiles[0];
       const offset = index - galleryState.position;
       const distance = Math.abs(offset);
-      const shouldRender = distance <= 4.45;
+      const shouldRender = distance <= 3.55;
       const renderState = shouldRender ? "1" : "0";
       if (card.dataset.orbitRendered !== renderState) {
         card.dataset.orbitRendered = renderState;
@@ -2058,21 +2156,16 @@ function mountOverdriveExperience() {
       const x = centerX + Math.cos(radians) * localRadius;
       const y = centerY + Math.sin(radians) * localRadius + profile.vertical;
       const scale = clamp((1.08 - distance * 0.066) * profile.scale, 0.52, 1.12);
-      const opacity = clamp(1.08 - Math.max(0, distance - 2.4) * 0.54, 0, 1);
+      const opacity = clamp((3.55 - distance) / 1.15, 0, 1);
       const rotation = angle + 90 + profile.rotation;
       const depthFalloff = 1 - clamp(distance / 4.5, 0, 1);
       const depth = profile.depth * depthFalloff - distance * 4;
-      const focus = clamp(1 - distance / 3.35, 0, 1);
       const cardLean = motionLean * (.45 + depthFalloff * .55);
 
       card.style.transform = `translate3d(${x}px, ${y}px, ${depth}px) translate(-50%, -50%) rotate(${rotation}deg) rotateY(${cardLean}deg) scale(${scale})`;
       card.style.opacity = `${opacity}`;
       card.style.zIndex = `${Math.max(1, 100 - Math.round(distance * 8))}`;
       card.style.pointerEvents = distance <= .62 ? "auto" : "none";
-      card.style.setProperty("--orbit-focus", `${focus}`);
-      card.style.setProperty("--orbit-saturation", `${.74 + focus * .26}`);
-      card.style.setProperty("--orbit-contrast", `${.94 + focus * .06}`);
-      card.style.setProperty("--orbit-meta-opacity", `${.5 + focus * .5}`);
       card.dataset.orbitRotation = `${rotation}`;
     });
 
@@ -2111,7 +2204,7 @@ function mountOverdriveExperience() {
   function goToGalleryIndex(index) {
     if (!galleryScene || !galleryCards.length) return;
     const nextIndex = clamp(index, 0, galleryCards.length - 1);
-    warmGalleryNeighborhood(nextIndex);
+    warmGalleryNeighborhood(nextIndex, nextIndex >= galleryState.activeIndex ? 1 : -1);
     const travel = Math.max(1, galleryScene.offsetHeight - window.innerHeight);
     galleryState.dragOffset = 0;
     galleryState.velocity = 0;
@@ -2423,6 +2516,8 @@ function mountOverdriveExperience() {
     galleryState.lastX = event.clientX;
     galleryState.lastMoveTime = performance.now();
     galleryState.velocity = 0;
+    window.clearTimeout(galleryState.decodeTimer);
+    galleryState.decodeTimer = 0;
     requestGalleryFrame();
   });
 
@@ -2534,7 +2629,7 @@ function mountOverdriveExperience() {
   if (galleryScene && galleryCards.length) {
     const galleryWarmObserver = new IntersectionObserver((entries, observer) => {
       if (!entries.some((entry) => entry.isIntersecting)) return;
-      warmGalleryNeighborhood(Math.max(0, galleryState.activeIndex));
+      warmGalleryNetwork(Math.max(0, galleryState.activeIndex));
       observer.disconnect();
     }, { rootMargin: "100% 0px" });
     galleryWarmObserver.observe(galleryScene);

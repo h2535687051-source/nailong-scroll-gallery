@@ -53,7 +53,7 @@
       type="image/webp"
       fetchpriority="high"
     />
-    <link rel="stylesheet" href="styles.css?v=20260722-fluid-v11" />
+    <link rel="stylesheet" href="styles.css?v=20260722-fbx-v3" />
   </head>
   <body class="is-loading">
     <button
@@ -129,6 +129,7 @@
     <div class="transition-grid" id="transition-grid" aria-hidden="true"></div>
     <div class="film-grain" aria-hidden="true"></div>
     <div class="cursor-aura" id="cursor-aura" aria-hidden="true">
+      <canvas class="cursor-aura__canvas" id="cursor-model-canvas" width="108" height="126"></canvas>
       <span></span>
     </div>
 
@@ -603,5 +604,6 @@
 
     <script src="script.js?v=20260722-fluid-v11"></script>
     <script type="module" src="webgl.js?v=20260722-fluid-v9"></script>
+    <script type="module" src="cursor-3d.js?v=20260722-fbx-v2"></script>
   </body>
 </html>

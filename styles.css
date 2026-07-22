@@ -2080,7 +2080,7 @@ button {
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 9000;
+  z-index: 12000;
   width: 46px;
   height: 52px;
   margin: -26px 0 0 -23px;
@@ -2090,6 +2090,35 @@ button {
   will-change: transform;
   transition: filter 240ms ease;
 }
+
+.cursor-aura__canvas {
+  position: absolute;
+  top: -14px;
+  left: -13px;
+  width: 72px;
+  height: 84px;
+  opacity: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 8px 8px rgba(30, 16, 0, .34)) drop-shadow(0 0 9px rgba(255, 203, 42, .22));
+  transition: opacity 220ms ease;
+}
+
+.cursor-aura__canvas.is-model-ready {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 12001;
+  opacity: 1;
+  transform: translate3d(calc(var(--cursor-x) - 36px), calc(var(--cursor-y) - 42px), 0);
+  transform-style: flat;
+}
+.cursor-aura.is-model-ready {
+  transform: translate3d(var(--cursor-x), var(--cursor-y), 0) scale(var(--cursor-scale));
+  transform-style: flat;
+}
+.cursor-aura.is-model-ready::before,
+.cursor-aura.is-model-ready::after,
+.cursor-aura.is-model-ready > span { display: none; }
 
 .cursor-aura::before,
 .cursor-aura::after {

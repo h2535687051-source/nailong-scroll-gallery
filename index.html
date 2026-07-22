@@ -53,7 +53,7 @@
       type="image/webp"
       fetchpriority="high"
     />
-    <link rel="stylesheet" href="styles.css?v=20260722-fluid-v10" />
+    <link rel="stylesheet" href="styles.css?v=20260722-fluid-v11" />
   </head>
   <body class="is-loading">
     <button
@@ -294,6 +294,16 @@
               <span data-prolog-line>一起把普通日子</span>
               <span data-prolog-line>玩成高光现场</span>
             </h2>
+            <button
+              class="prolog-model-trigger"
+              id="prolog-model-trigger"
+              type="button"
+              data-magnetic
+              aria-controls="model-dialog"
+            >
+              <span>打开奶龙模型实验室</span>
+              <small>3D / ROTATE</small>
+            </button>
           </div>
           <div class="prolog-marquee" aria-hidden="true">
             <div>NAILONG FOREVER · SHU CHENG LIN AI · NAILONG FOREVER · SHU CHENG LIN AI ·</div>
@@ -532,7 +542,37 @@
       </div>
     </dialog>
 
-    <script src="script.js?v=20260722-fluid-v10"></script>
+    <dialog class="model-dialog" id="model-dialog" aria-labelledby="model-dialog-title">
+      <div class="model-dialog__surface">
+        <header class="model-dialog__header">
+          <div>
+            <p>NAILONG MODEL LAB / 01</p>
+            <h2 id="model-dialog-title">奶龙 · 旋转观察</h2>
+          </div>
+          <button class="model-dialog__close" id="model-dialog-close" type="button" aria-label="关闭奶龙模型实验室">CLOSE</button>
+        </header>
+        <div class="model-dialog__viewer">
+          <iframe
+            id="model-viewer-frame"
+            title="奶龙 3D 模型查看器"
+            loading="lazy"
+            data-src="https://sketchfab.com/models/d4617facf9574b45bc57c64e44497242/embed?autostart=1&ui_infos=0&ui_controls=1&ui_watermark=1"
+            allow="accelerometer; autoplay; fullscreen; gyroscope; xr-spatial-tracking"
+            allowfullscreen
+          ></iframe>
+        </div>
+        <footer class="model-dialog__footer">
+          <span>DRAG / ZOOM / FULLSCREEN</span>
+          <a
+            href="https://sketchfab.com/models/d4617facf9574b45bc57c64e44497242"
+            target="_blank"
+            rel="noreferrer"
+          >SKETCHFAB / CC ATTRIBUTION</a>
+        </footer>
+      </div>
+    </dialog>
+
+    <script src="script.js?v=20260722-fluid-v11"></script>
     <script type="module" src="webgl.js?v=20260722-fluid-v9"></script>
   </body>
 </html>

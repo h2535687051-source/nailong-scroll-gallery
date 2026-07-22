@@ -1598,6 +1598,10 @@ function mountOverdriveExperience() {
   const cardDialogClose = document.querySelector("#card-dialog-close");
   const cardDialogPrevious = document.querySelector("#card-dialog-prev");
   const cardDialogNext = document.querySelector("#card-dialog-next");
+  const modelDialog = document.querySelector("#model-dialog");
+  const modelDialogTrigger = document.querySelector("#prolog-model-trigger");
+  const modelDialogClose = document.querySelector("#model-dialog-close");
+  const modelViewerFrame = document.querySelector("#model-viewer-frame");
   const canHover = window.matchMedia?.("(hover: hover) and (pointer: fine)").matches;
 
   const cardTitles = [
@@ -2334,6 +2338,28 @@ function mountOverdriveExperience() {
     selectedCardIndex = (selectedCardIndex + 1) % flipCards.length;
     renderCardDialog();
     updateSelectedCard(selectedCardIndex);
+  });
+
+  function openModelDialog() {
+    if (!modelDialog) return;
+    if (modelViewerFrame && !modelViewerFrame.src) {
+      modelViewerFrame.src = modelViewerFrame.dataset.src || "";
+    }
+    if (!modelDialog.open) modelDialog.showModal();
+    modelDialogTrigger?.setAttribute("aria-expanded", "true");
+  }
+
+  function closeModelDialog() {
+    if (!modelDialog?.open) return;
+    modelDialog.close();
+    modelDialogTrigger?.setAttribute("aria-expanded", "false");
+    modelDialogTrigger?.focus({ preventScroll: true });
+  }
+
+  modelDialogTrigger?.addEventListener("click", openModelDialog);
+  modelDialogClose?.addEventListener("click", closeModelDialog);
+  modelDialog?.addEventListener("click", (event) => {
+    if (event.target === modelDialog) closeModelDialog();
   });
   function endGalleryDrag(event) {
     if (!galleryState.dragging || event.pointerId !== galleryState.pointerId) return;

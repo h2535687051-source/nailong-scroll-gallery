@@ -186,6 +186,15 @@ if (canvas && sceneElement) {
     let pointerY = 0;
     let smoothX = 0;
     let smoothY = 0;
+    let dragRotationX = 0;
+    let dragRotationY = 0;
+    let smoothDragRotationX = 0;
+    let smoothDragRotationY = 0;
+    let dragging = false;
+    let dragPointerId = null;
+    let lastDragX = 0;
+    let lastDragY = 0;
+    canvas.dataset.dragRotation = "0.000,0.000";
     let lastTime = performance.now();
     let sceneTop = 0;
     let sceneTravel = 1;
@@ -219,12 +228,14 @@ if (canvas && sceneElement) {
       const progress = getScrollProgress();
       smoothX += (pointerX - smoothX) * 0.055;
       smoothY += (pointerY - smoothY) * 0.055;
+      smoothDragRotationX += (dragRotationX - smoothDragRotationX) * 0.12;
+      smoothDragRotationY += (dragRotationY - smoothDragRotationY) * 0.12;
 
-      character.rotation.x = smoothY * 0.12 + Math.sin(now * 0.0008) * 0.015;
-      character.rotation.y = smoothX * 0.15;
+      character.rotation.x = smoothY * 0.12 - smoothDragRotationX * 0.42 + Math.sin(now * 0.0008) * 0.015;
+      character.rotation.y = smoothX * 0.15 + smoothDragRotationY * 0.64;
       character.position.y = -0.12 + Math.sin(now * 0.0011) * 0.045 - progress * 0.08;
-      sculpture.rotation.x = smoothY * 0.16 + (progress - 0.5) * 0.28;
-      sculpture.rotation.y = smoothX * 0.2 + progress * 0.74;
+      sculpture.rotation.x = smoothY * 0.16 - smoothDragRotationX * 0.18 + (progress - 0.5) * 0.28;
+      sculpture.rotation.y = smoothX * 0.2 + smoothDragRotationY * 0.3 + progress * 0.74;
       sculpture.rotation.z = progress * -0.34;
       particles.rotation.y = now * 0.00004;
       particles.rotation.z = progress * 0.4;
@@ -265,6 +276,56 @@ if (canvas && sceneElement) {
       pointerX = event.clientX / window.innerWidth * 2 - 1;
       pointerY = -(event.clientY / window.innerHeight * 2 - 1);
     }, { passive: true });
+
+    sceneElement.addEventListener("pointerdown", (event) => {
+      if (
+        event.button !== 0
+        || !active
+        || event.clientX < window.innerWidth * 0.36
+        || event.target.closest("button, a")
+      ) return;
+      dragging = true;
+      dragPointerId = event.pointerId;
+      lastDragX = event.clientX;
+      lastDragY = event.clientY;
+      sceneElement.setPointerCapture(event.pointerId);
+      canvas.classList.add("is-dragging");
+      event.preventDefault();
+    });
+
+    sceneElement.addEventListener("pointermove", (event) => {
+      if (!dragging || event.pointerId !== dragPointerId) return;
+      const deltaX = event.clientX - lastDragX;
+      const deltaY = event.clientY - lastDragY;
+      dragRotationY = THREE.MathUtils.clamp(dragRotationY + deltaX * 0.009, -2.2, 2.2);
+      dragRotationX = THREE.MathUtils.clamp(dragRotationX + deltaY * 0.006, -1.1, 1.1);
+      canvas.dataset.dragRotation = `${dragRotationX.toFixed(3)},${dragRotationY.toFixed(3)}`;
+      lastDragX = event.clientX;
+      lastDragY = event.clientY;
+      if (!reduceMotion) {
+        if (!frame && active) frame = requestAnimationFrame(draw);
+      } else {
+        draw();
+      }
+      event.preventDefault();
+    });
+
+    const endDrag = (event) => {
+      if (!dragging || event.pointerId !== dragPointerId) return;
+      dragging = false;
+      dragPointerId = null;
+      canvas.classList.remove("is-dragging");
+      if (sceneElement.hasPointerCapture(event.pointerId)) sceneElement.releasePointerCapture(event.pointerId);
+      event.preventDefault();
+    };
+
+    sceneElement.addEventListener("pointerup", endDrag);
+    sceneElement.addEventListener("pointercancel", endDrag);
+    sceneElement.addEventListener("lostpointercapture", () => {
+      dragging = false;
+      dragPointerId = null;
+      canvas.classList.remove("is-dragging");
+    });
     const canvasResizeObserver = new ResizeObserver(() => {
       resize();
       if (!active || reduceMotion) draw();
